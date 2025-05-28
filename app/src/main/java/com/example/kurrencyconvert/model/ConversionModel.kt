@@ -1,33 +1,27 @@
 package com.example.kurrencyconvert.model
 
 /**
- * Modèle de données pour la requête de conversion
+ * Modèle de données pour la réponse de l'API de taux de change
  */
-data class ConversionRequest(
-    val from: String,
-    val to: String,
-    val amount: Double
+data class ExchangeRateResponse(
+    val base: String = "",
+    val date: String = "",
+    val rates: Map<String, Double> = emptyMap(),
+    val time_last_updated: Long = 0
 )
 
 /**
- * Modèle de données pour la réponse de l'API de conversion
+ * Modèle de données pour la réponse de conversion
  */
 data class ConversionResponse(
-    val success: Boolean,
-    val query: Query,
-    val info: Info,
-    val date: String,
-    val result: Double
-)
-
-data class Query(
-    val from: String,
-    val to: String,
-    val amount: Double
-)
-
-data class Info(
-    val rate: Double
+    val success: Boolean = false,
+    val date: String = "",
+    val result: Double = 0.0,
+    // Champs additionnels pour faciliter l'utilisation
+    val sourceRate: Double = 0.0,
+    val sourceCurrency: String = "",
+    val targetCurrency: String = "",
+    val amount: Double = 0.0
 )
 
 /**

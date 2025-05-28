@@ -1,18 +1,16 @@
 package com.example.kurrencyconvert.api
 
-import com.example.kurrencyconvert.model.ConversionResponse
+// Utilisation de la classe locale au package api
 import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Query
+import retrofit2.http.Path
 
 /**
  * Interface Retrofit pour l'API de conversion de devises
  */
 interface ExchangeRateApi {
-    @GET("convert")
-    suspend fun convertCurrency(
-        @Query("from") from: String,
-        @Query("to") to: String,
-        @Query("amount") amount: Double
-    ): Response<ConversionResponse>
+    @GET("{base}")
+    suspend fun getExchangeRates(
+        @Path("base") baseCurrency: String
+    ): Response<ExchangeRateResponse>
 }

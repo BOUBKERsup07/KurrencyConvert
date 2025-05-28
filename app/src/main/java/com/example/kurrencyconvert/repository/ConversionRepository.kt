@@ -1,5 +1,6 @@
 package com.example.kurrencyconvert.repository
 
+import com.example.kurrencyconvert.api.ExchangeRateResponse
 import com.example.kurrencyconvert.api.RetrofitClient
 import com.example.kurrencyconvert.model.ConversionRecord
 import com.example.kurrencyconvert.model.ConversionResponse
@@ -22,9 +23,33 @@ class ConversionRepository {
     suspend fun convertCurrency(from: String, to: String, amount: Double): Result<ConversionResponse> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = exchangeRateApi.convertCurrency(from, to, amount)
+                // Obtenir les taux de change pour la devise source
+                val response = exchangeRateApi.getExchangeRates(from)
+                
                 if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
+                    val exchangeRateResponse = response.body()!!
+                    val rates = exchangeRateResponse.rates
+                    
+                    // Vérifier si la devise cible existe dans les taux
+                    if (rates.containsKey(to)) {
+                        val rate = rates[to]!!
+                        val result = amount * rate
+                        
+                        // Créer une réponse de conversion
+                        val conversionResponse = ConversionResponse(
+                            success = true,
+                            date = exchangeRateResponse.date,
+                            result = result,
+                            sourceRate = rate,
+                            sourceCurrency = from,
+                            targetCurrency = to,
+                            amount = amount
+                        )
+                        
+                        Result.success(conversionResponse)
+                    } else {
+                        Result.failure(Exception("Devise cible non trouvée dans les taux de change"))
+                    }
                 } else {
                     Result.failure(Exception("Erreur lors de la conversion: ${response.code()} ${response.message()}"))
                 }

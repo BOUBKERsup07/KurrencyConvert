@@ -62,10 +62,15 @@ class ConversionViewModel : ViewModel() {
                 val result = repository.convertCurrency(from, to, amountDouble)
                 
                 result.onSuccess { response ->
-                    _conversionResult.value = response.result
-                    
-                    // Sauvegarde dans Firebase
-                    saveConversion(from, to, amountDouble, response.result)
+                    // Vérifier que le résultat est valide avant de le sauvegarder
+                    if (response.success && response.result > 0) {
+                        _conversionResult.value = response.result
+                        
+                        // Sauvegarde dans Firebase
+                        saveConversion(from, to, amountDouble, response.result)
+                    } else {
+                        _errorMessage.value = "Erreur: Résultat de conversion invalide"
+                    }
                 }
                 
                 result.onFailure { error ->
@@ -83,6 +88,13 @@ class ConversionViewModel : ViewModel() {
      * Sauvegarde une conversion dans Firebase
      */
     private fun saveConversion(from: String, to: String, amount: Double, result: Double) {
+        // Ne pas sauvegarder si le résultat est 0 ou négatif
+        if (result <= 0) {
+            _errorMessage.value = "Erreur: Impossible de sauvegarder un résultat invalide"
+            _savingStatus.value = false
+            return
+        }
+        
         viewModelScope.launch {
             _savingStatus.value = true
             
@@ -96,6 +108,9 @@ class ConversionViewModel : ViewModel() {
             
             try {
                 repository.saveConversion(conversionRecord)
+                    .onSuccess {
+                        // Confirmation de sauvegarde réussie (optionnel)
+                    }
                     .onFailure { error ->
                         _errorMessage.value = "Erreur lors de la sauvegarde: ${error.message}"
                     }
