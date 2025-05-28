@@ -26,6 +26,7 @@ import com.example.kurrencyconvert.ui.theme.KurrencyConvertTheme
 import com.example.kurrencyconvert.viewmodel.ConversionViewModel
 import java.text.DecimalFormat
 
+@OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
     private val viewModel: ConversionViewModel by viewModels()
     
@@ -214,7 +215,7 @@ fun ConversionScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "${amount.ifEmpty { "0" }} $fromCurrency = ${decimalFormat.format(result)} $toCurrency",
+                        text = "${amount.ifEmpty { "0" }} $fromCurrency = ${decimalFormat.format(result as Double)} $toCurrency",
                         fontSize = 20.sp,
                         textAlign = TextAlign.Center
                     )
