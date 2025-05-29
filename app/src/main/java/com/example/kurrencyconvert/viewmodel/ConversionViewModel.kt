@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.kurrencyconvert.model.ConversionRecord
+import com.example.kurrencyconvert.model.formatTimestamp
 import com.example.kurrencyconvert.repository.ConversionRepository
 import kotlinx.coroutines.launch
 
@@ -87,7 +88,7 @@ class ConversionViewModel : ViewModel() {
     /**
      * Sauvegarde une conversion dans Firebase
      */
-    private fun saveConversion(from: String, to: String, amount: Double, result: Double) {
+    fun saveConversion(from: String, to: String, amount: Double, result: Double) {
         // Ne pas sauvegarder si le résultat est 0 ou négatif
         if (result <= 0) {
             _errorMessage.value = "Erreur: Impossible de sauvegarder un résultat invalide"
@@ -98,8 +99,9 @@ class ConversionViewModel : ViewModel() {
         viewModelScope.launch {
             _savingStatus.value = true
             
+            val formattedTime = formatTimestamp(System.currentTimeMillis())
             val conversionRecord = ConversionRecord(
-                timestamp = System.currentTimeMillis(),
+                timestamp = formattedTime,
                 source = from,
                 target = to,
                 amount = amount,
@@ -128,5 +130,12 @@ class ConversionViewModel : ViewModel() {
     fun resetStates() {
         _errorMessage.value = null
         _conversionResult.value = null
+    }
+    
+    /**
+     * Sauvegarde une conversion manuellement depuis l'UI
+     */
+    fun saveConversionFromUI(from: String, to: String, amount: Double, result: Double) {
+        saveConversion(from, to, amount, result)
     }
 }

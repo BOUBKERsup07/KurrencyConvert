@@ -28,9 +28,17 @@ data class ConversionResponse(
  * Modèle de données pour l'enregistrement des conversions dans Firebase
  */
 data class ConversionRecord(
-    val timestamp: Long = System.currentTimeMillis(),
+    val timestamp: String = formatTimestamp(System.currentTimeMillis()),
     val source: String = "",
     val target: String = "",
     val amount: Double = 0.0,
     val result: Double = 0.0
 )
+
+/**
+ * Formate un timestamp en date lisible
+ */
+fun formatTimestamp(timestamp: Long): String {
+    val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault())
+    return dateFormat.format(java.util.Date(timestamp))
+}
