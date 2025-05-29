@@ -31,6 +31,14 @@ class ConversionViewModel : ViewModel() {
     private val _savingStatus = MutableLiveData<Boolean>()
     val savingStatus: LiveData<Boolean> = _savingStatus
     
+    // Historique des conversions
+    private val _conversionHistory = MutableLiveData<List<ConversionRecord>>()
+    val conversionHistory: LiveData<List<ConversionRecord>> = _conversionHistory
+    
+    // État de chargement de l'historique
+    private val _loadingHistory = MutableLiveData<Boolean>(false)
+    val loadingHistory: LiveData<Boolean> = _loadingHistory
+    
     /**
      * Convertit une devise en une autre et sauvegarde le résultat dans Firebase
      */
@@ -137,5 +145,31 @@ class ConversionViewModel : ViewModel() {
      */
     fun saveConversionFromUI(from: String, to: String, amount: Double, result: Double) {
         saveConversion(from, to, amount, result)
+    }
+    
+    /**
+     * Charge l'historique des conversions depuis Firebase
+     */
+    fun loadConversionHistory() {
+        viewModelScope.launch {
+            _loadingHistory.value = true
+            _errorMessage.value = null
+            
+            try {
+                repository.getConversions()
+                    .onSuccess { conversions ->
+                        _conversionHistory.value = conversions
+                    }
+                    .onFailure { error ->
+                        _errorMessage.value = "Erreur lors du chargement de l'historique: ${error.message}"
+                        _conversionHistory.value = emptyList()
+                    }
+            } catch (e: Exception) {
+                _errorMessage.value = "Erreur lors du chargement de l'historique: ${e.message}"
+                _conversionHistory.value = emptyList()
+            } finally {
+                _loadingHistory.value = false
+            }
+        }
     }
 }

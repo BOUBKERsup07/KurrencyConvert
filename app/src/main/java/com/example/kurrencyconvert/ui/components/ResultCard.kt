@@ -35,12 +35,11 @@ fun ResultCard(
     toCurrency: String,
     result: Double?,
     isLoading: Boolean,
-    onSaveClick: () -> Unit,
+    // onSaveClick supprimé,
     modifier: Modifier = Modifier
 ) {
     val decimalFormat = DecimalFormat("#,##0.00")
-    val scope = rememberCoroutineScope()
-    var showCheckmark by remember { mutableStateOf(false) }
+    // Variables pour le bouton de sauvegarde supprimées
     
     val animatedResult = remember(result) {
         Animatable(initialValue = 0f)
@@ -132,41 +131,7 @@ fun ResultCard(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                onSaveClick()
-                                showCheckmark = true
-                                delay(2000)
-                                showCheckmark = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (showCheckmark) SuccessLight else MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.padding(8.dp)
-                        ) {
-                            if (showCheckmark) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Sauvegardé",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Sauvegardé!")
-                            } else {
-                                Text("Sauvegarder cette conversion")
-                            }
-                        }
-                    }
+                    // Le bouton de sauvegarde a été supprimé
                 }
             }
         }

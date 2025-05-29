@@ -11,6 +11,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +40,7 @@ import com.example.kurrencyconvert.ui.theme.GoldAccent
 import com.example.kurrencyconvert.ui.theme.KurrencyConvertTheme
 import com.example.kurrencyconvert.ui.theme.PrimaryLight
 import com.example.kurrencyconvert.viewmodel.ConversionViewModel
+import com.example.kurrencyconvert.model.ConversionRecord
 import java.text.DecimalFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,16 +51,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            // Variable d'état pour gérer la navigation entre l'écran principal et l'historique
+            var showHistoryScreen by remember { mutableStateOf(false) }
+            
             KurrencyConvertTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        LargeTopAppBar(
+                        TopAppBar(
                             title = { 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .size(40.dp)
+                                            .size(32.dp)
                                             .clip(CircleShape)
                                             .background(
                                                 Brush.horizontalGradient(
@@ -70,26 +76,52 @@ class MainActivity : ComponentActivity() {
                                             text = "K",
                                             color = Color.White,
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 22.sp
+                                            fontSize = 18.sp
                                         )
                                     }
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = "KurrencyConvert",
-                                        style = MaterialTheme.typography.headlineMedium
+                                        style = MaterialTheme.typography.titleLarge
                                     )
                                 }
                             },
-                            colors = TopAppBarDefaults.largeTopAppBarColors(
+                            actions = {
+                                IconButton(onClick = {
+                                    // Ouvrir l'écran d'historique
+                                    showHistoryScreen = true
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.History,
+                                        contentDescription = "Historique",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.background
                             )
                         )
                     }
                 ) { innerPadding ->
-                    ConversionScreen(
-                        viewModel = viewModel,
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    // Navigation entre l'écran principal et l'écran d'historique
+                    if (showHistoryScreen) {
+                        // Charger l'historique lorsque l'écran d'historique est affiché
+                        LaunchedEffect(Unit) {
+                            viewModel.loadConversionHistory()
+                        }
+                        
+                        HistoryScreen(
+                            viewModel = viewModel,
+                            onBackClick = { showHistoryScreen = false },
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    } else {
+                        ConversionScreen(
+                            viewModel = viewModel,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
                 }
             }
         }
@@ -268,13 +300,7 @@ fun ConversionScreen(
                 fromCurrency = fromCurrency,
                 toCurrency = toCurrency,
                 result = conversionResult,
-                isLoading = isLoading,
-                onSaveClick = {
-                    // Sauvegarder la conversion
-                    conversionResult?.let { result ->
-                        viewModel.saveConversionFromUI(fromCurrency, toCurrency, amount.toDoubleOrNull() ?: 0.0, result)
-                    }
-                }
+                isLoading = isLoading
             )
         }
     }
@@ -287,5 +313,195 @@ fun ConversionScreenPreview() {
         // Utilisation d'un ViewModel factice pour la prévisualisation
         val viewModel = ConversionViewModel()
         ConversionScreen(viewModel = viewModel)
+    }
+}
+
+/**
+ * Écran d'historique des conversions
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HistoryScreen(
+    viewModel: ConversionViewModel,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val conversionHistory by viewModel.conversionHistory.observeAsState(emptyList())
+    val isLoading by viewModel.loadingHistory.observeAsState(false)
+    val errorMessage by viewModel.errorMessage.observeAsState()
+    val context = LocalContext.current
+    
+    // Effet pour afficher les erreurs
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    Column(modifier = modifier.fillMaxSize()) {
+        // Barre supérieure de l'écran d'historique
+        TopAppBar(
+            title = { Text("Historique des conversions") },
+            navigationIcon = {
+                IconButton(onClick = onBackClick) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background
+            )
+        )
+        
+        // Contenu principal
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isLoading) {
+                // Affichage du chargement
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else if (conversionHistory.isEmpty()) {
+                // Message si aucune conversion n'est trouvée
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "Aucune conversion enregistrée",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "Effectuez une conversion et enregistrez-la pour la voir apparaitre ici",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                    )
+                }
+            } else {
+                // Liste des conversions
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp)
+                ) {
+                    items(conversionHistory) { conversion ->
+                        ConversionHistoryItem(conversion = conversion)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Élément d'historique de conversion
+ */
+@Composable
+fun ConversionHistoryItem(conversion: ConversionRecord) {
+    val decimalFormat = DecimalFormat("#,##0.00")
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Date de la conversion
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                
+                Spacer(modifier = Modifier.width(4.dp))
+                
+                Text(
+                    text = conversion.timestamp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Détails de la conversion
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Montant source
+                Column {
+                    Text(
+                        text = decimalFormat.format(conversion.amount),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Text(
+                        text = conversion.source,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                
+                // Flèche
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "vers",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                
+                // Montant cible
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = decimalFormat.format(conversion.result),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    Text(
+                        text = conversion.target,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+            
+            // Taux de conversion
+            Text(
+                text = "Taux: 1 ${conversion.source} = ${decimalFormat.format(conversion.result / conversion.amount)} ${conversion.target}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.End)
+            )
+        }
     }
 }
