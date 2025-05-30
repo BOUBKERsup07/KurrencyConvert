@@ -36,6 +36,7 @@ KurrencyConvert est une application Android qui permet aux utilisateurs de conve
 
 ## Capture d'écran de Firebase Realtime Database
 ![alt text](image.png)
+![alt text](image-1.png)
 
 ## Implémentation
 L'application utilise l'architecture MVVM pour séparer la logique métier de l'interface utilisateur :
