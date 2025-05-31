@@ -9,7 +9,11 @@ import retrofit2.converter.gson.GsonConverterFactory
  * Client Retrofit pour configurer les appels API
  */
 object RetrofitClient {
-    private const val BASE_URL = "https://api.exchangerate-api.com/v4/latest/"
+    // URL de l'API exchangerate.host comme demandé par le professeur
+    private const val BASE_URL = "https://api.exchangerate.host/"
+    
+    // Clé d'accès pour l'API
+    const val API_KEY = "4d0a758322b47984a63fccf7a662ac7b"
     
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

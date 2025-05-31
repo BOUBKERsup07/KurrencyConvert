@@ -68,25 +68,32 @@ class ConversionViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
+                android.util.Log.d("ConversionViewModel", "Début de conversion: $from -> $to, montant: $amountDouble")
                 val result = repository.convertCurrency(from, to, amountDouble)
                 
                 result.onSuccess { response ->
+                    android.util.Log.d("ConversionViewModel", "Réponse de conversion reçue: success=${response.success}, result=${response.result}")
+                    
                     // Vérifier que le résultat est valide avant de le sauvegarder
                     if (response.success && response.result > 0) {
                         _conversionResult.value = response.result
+                        android.util.Log.d("ConversionViewModel", "Conversion réussie: ${response.result}")
                         
                         // Sauvegarde dans Firebase
                         saveConversion(from, to, amountDouble, response.result)
                     } else {
+                        android.util.Log.e("ConversionViewModel", "Résultat invalide: success=${response.success}, result=${response.result}")
                         _errorMessage.value = "Erreur: Résultat de conversion invalide"
                     }
                 }
                 
                 result.onFailure { error ->
-                    _errorMessage.value = "Erreur: ${error.message}"
+                    android.util.Log.e("ConversionViewModel", "Erreur de conversion", error)
+                    _errorMessage.value = "Erreur: ${error.message ?: "Erreur inconnue lors de la conversion"}"
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Erreur: ${e.message}"
+                android.util.Log.e("ConversionViewModel", "Exception lors de la conversion", e)
+                _errorMessage.value = "Erreur: ${e.message ?: "Erreur inconnue lors de la conversion"}"
             } finally {
                 _isLoading.value = false
             }

@@ -1,6 +1,6 @@
 package com.example.kurrencyconvert.repository
 
-import com.example.kurrencyconvert.api.ExchangeRateResponse
+import com.example.kurrencyconvert.api.ConvertResponse
 import com.example.kurrencyconvert.api.RetrofitClient
 import com.example.kurrencyconvert.model.ConversionRecord
 import com.example.kurrencyconvert.model.ConversionResponse
@@ -24,37 +24,53 @@ class ConversionRepository {
     suspend fun convertCurrency(from: String, to: String, amount: Double): Result<ConversionResponse> {
         return withContext(Dispatchers.IO) {
             try {
-                // Obtenir les taux de change pour la devise source
-                val response = exchangeRateApi.getExchangeRates(from)
+                // Log des paramètres d'entrée
+                android.util.Log.d("ConversionRepository", "Conversion demandée: $from -> $to, montant: $amount")
+                android.util.Log.d("ConversionRepository", "Utilisation de la clé API: ${RetrofitClient.API_KEY}")
+                
+                // Appel direct à l'API de conversion avec la clé d'accès
+                val response = exchangeRateApi.convertCurrency(from, to, amount)
+                
+                // Log de la réponse
+                android.util.Log.d("ConversionRepository", "Réponse API: ${response.isSuccessful}, code: ${response.code()}")
                 
                 if (response.isSuccessful && response.body() != null) {
-                    val exchangeRateResponse = response.body()!!
-                    val rates = exchangeRateResponse.rates
+                    val convertResponse = response.body()!!
                     
-                    // Vérifier si la devise cible existe dans les taux
-                    if (rates.containsKey(to)) {
-                        val rate = rates[to]!!
-                        val result = amount * rate
-                        
-                        // Créer une réponse de conversion
+                    // Log du contenu de la réponse
+                    android.util.Log.d("ConversionRepository", "Contenu réponse: success=${convertResponse.success}, result=${convertResponse.result}")
+                    
+                    // Vérifier que le résultat est valide
+                    if (convertResponse.success && convertResponse.result > 0) {
+                        // Créer une réponse de conversion à partir de la réponse de l'API
                         val conversionResponse = ConversionResponse(
                             success = true,
-                            date = exchangeRateResponse.date,
-                            result = result,
-                            sourceRate = rate,
-                            sourceCurrency = from,
-                            targetCurrency = to,
-                            amount = amount
+                            date = convertResponse.date,
+                            result = convertResponse.result,
+                            sourceRate = convertResponse.info.rate,
+                            sourceCurrency = convertResponse.query.from,
+                            targetCurrency = convertResponse.query.to,
+                            amount = convertResponse.query.amount
                         )
                         
+                        android.util.Log.d("ConversionRepository", "Conversion réussie: ${conversionResponse.result}")
                         Result.success(conversionResponse)
                     } else {
-                        Result.failure(Exception("Devise cible non trouvée dans les taux de change"))
+                        // Si la conversion a échoué, vérifier s'il y a un message d'erreur
+                        val errorMessage = if (convertResponse.error != null) {
+                            "Erreur API: ${convertResponse.error.info}"
+                        } else {
+                            "Résultat de conversion invalide"
+                        }
+                        android.util.Log.e("ConversionRepository", "Réponse API invalide: $errorMessage")
+                        Result.failure(Exception(errorMessage))
                     }
                 } else {
+                    android.util.Log.e("ConversionRepository", "Erreur API: ${response.code()} ${response.message()}")
                     Result.failure(Exception("Erreur lors de la conversion: ${response.code()} ${response.message()}"))
                 }
             } catch (e: Exception) {
+                android.util.Log.e("ConversionRepository", "Exception lors de la conversion", e)
                 Result.failure(e)
             }
         }
