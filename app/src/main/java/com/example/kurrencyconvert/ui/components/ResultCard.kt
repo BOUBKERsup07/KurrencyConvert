@@ -130,8 +130,6 @@ fun ResultCard(
                             )
                         }
                     }
-                    
-                    // Le bouton de sauvegarde a été supprimé
                 }
             }
         }

@@ -310,7 +310,7 @@ fun ConversionScreen(
 @Composable
 fun ConversionScreenPreview() {
     KurrencyConvertTheme {
-        // Utilisation d'un ViewModel factice pour la prévisualisation
+        // Utilisation ViewModel factice pour la prévisualisation
         val viewModel = ConversionViewModel()
         ConversionScreen(viewModel = viewModel)
     }
